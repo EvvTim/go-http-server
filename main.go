@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
@@ -11,59 +10,62 @@ import (
 )
 
 func main() {
-
-	err := godotenv.Load(".env")
-	if err != nil {
+	if err := loadConfig(); err != nil {
 		log.Fatal(err)
 	}
-	portString := os.Getenv("PORT")
 
-	if portString == "" {
-		log.Fatal("PORT is not found in the env")
+	router := setupRouter()
+
+	port := os.Getenv("PORT")
+	if err := startServer(port, router); err != nil {
+		log.Fatal(err)
 	}
+}
 
+func loadConfig() error {
+	if err := godotenv.Load(".env"); err != nil {
+		return err
+	}
+	if os.Getenv("PORT") == "" {
+		return &configError{"PORT is not found in the env"}
+	}
+	return nil
+}
+
+func setupRouter() *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:     []string{"https://*", "http://*"},
-		AllowOriginFunc:    nil,
-		AllowedMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:     []string{"*"},
-		ExposedHeaders:     []string{"Link"},
-		AllowCredentials:   false,
-		MaxAge:             300,
-		OptionsPassthrough: false,
-		Debug:              false,
+		AllowedOrigins:   []string{"https://*example.com", "http://*example.com"}, // Пример: замените на допустимые источники
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
 	}))
 
 	v1Router := chi.NewRouter()
 	v1Router.Get("/healthz", handlerReadiness)
 	v1Router.Get("/err", handleErr)
-
 	router.Mount("/v1", v1Router)
 
+	return router
+}
+
+func startServer(port string, handler http.Handler) error {
+	addr := ":" + port
 	srv := &http.Server{
-		Addr:                         ":" + portString,
-		Handler:                      router,
-		DisableGeneralOptionsHandler: false,
-		TLSConfig:                    nil,
-		ReadTimeout:                  0,
-		ReadHeaderTimeout:            0,
-		WriteTimeout:                 0,
-		IdleTimeout:                  0,
-		MaxHeaderBytes:               0,
-		TLSNextProto:                 nil,
-		ConnState:                    nil,
-		ErrorLog:                     nil,
-		BaseContext:                  nil,
-		ConnContext:                  nil,
+		Addr:    addr,
+		Handler: handler,
 	}
-	log.Printf("Server starting on port %v", srv.Addr)
-	err = srv.ListenAndServe()
+	log.Printf("Server starting on port %v", addr)
+	return srv.ListenAndServe()
+}
 
-	if err != nil {
-		log.Fatal(err)
-	}
+type configError struct {
+	msg string
+}
 
-	fmt.Println("Port:", portString)
+func (e *configError) Error() string {
+	return e.msg
 }
