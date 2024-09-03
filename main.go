@@ -36,7 +36,7 @@ func setupRouter() *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*example.com", "http://*example.com"}, // Пример: замените на допустимые источники
+		AllowedOrigins:   []string{"https://*example.com", "http://*example.com"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
