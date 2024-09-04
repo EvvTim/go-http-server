@@ -20,6 +20,6 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 }
 
 func handlerReadiness(w http.ResponseWriter, r *http.Request) {
-	respondWithJSON(w, 200, struct {
+	respondWithJSON(w, http.StatusOK, struct {
 	}{})
 }
